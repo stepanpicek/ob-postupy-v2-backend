@@ -1,4 +1,5 @@
-﻿using OBPostupyApi.Entities;
+﻿using OBPostupyApi.Dto.Responses;
+using OBPostupyApi.Entities;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Readers;
@@ -18,6 +19,16 @@ namespace OBPostupyApi.Services
         private readonly ICategoryRepository _categoryRepository;
         private readonly ICourseRepository _courseRepository;
 
+        public CourseService(IRaceRepository raceRepository, IMapRepository mapRepository, ICoursesReader coursesReader,
+            ICategoryRepository categoryRepository, ICourseRepository courseRepository)
+        {
+            _raceRepository = raceRepository;
+            _mapRepository = mapRepository;
+            _coursesReader = coursesReader;
+            _categoryRepository = categoryRepository;
+            _courseRepository = courseRepository;
+        }
+
         public async Task<ResponseType> SaveCoursesAsync(string raceKey, Stream fileStream)
         {
             var race = await _raceRepository.GetRaceByKeyAsync(raceKey);
@@ -33,7 +44,7 @@ namespace OBPostupyApi.Services
             return ResponseType.OK;
         }
 
-        public async Task<ResponseType> AddCoursesToCategories(string raceKey, List<CourseToCategory> courseToCategories)
+        public async Task<ResponseType> AddCoursesToCategoriesAsync(string raceKey, List<CourseToCategory> courseToCategories)
         {
             var race = await _raceRepository.GetRaceByKeyAsync(raceKey);
             if (race == null)
@@ -93,6 +104,29 @@ namespace OBPostupyApi.Services
                 currentMap.South = map.South;
                 currentMap.Scale = map.Scale;
             }
+        }
+
+        public async Task<CourseResponse> GetCourseAsync(int id)
+        {
+            var course = await _courseRepository.GetCourseByIdAsync(id);
+            if(course == null)
+            {
+                return new CourseResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var controls = course.CourseControl.Select(s => new ControlResponse
+            {
+                Id = s.Control.Id,
+                Position = new List<double> { s.Control.Coordinates.Item1, s.Control.Coordinates.Item2 },
+                Order = s.Order,
+                Type = s.Type
+            }).ToList();
+
+            return new CourseResponse 
+            { 
+                Controls = controls,
+                ResponseType = ResponseType.OK
+            };
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Services;
@@ -14,6 +16,14 @@ namespace OBPostupyApi.Controllers
     {
         private readonly IResultService _resultService;
         private readonly IRaceService _raceService;
+        private readonly ILogger<ResultController> _logger;
+
+        public ResultController(IResultService resultService, IRaceService raceService, ILogger<ResultController> logger)
+        {
+            _resultService = resultService;
+            _raceService = raceService;
+            _logger = logger;
+        }
 
         [HttpPost("oris")]
         public async Task<IActionResult> UploadOris([FromBody] OrisResultModel model)
@@ -57,6 +67,82 @@ namespace OBPostupyApi.Controllers
             return response switch
             {
                 ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpDelete("{raceKey}")]
+        public async Task<IActionResult> Delete(string raceKey)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var canEdit = await _raceService.CanUserEdit(raceKey, User);
+            if (!canEdit)
+            {
+                return Unauthorized();
+            }
+
+            var response = await _resultService.DeleteResults(raceKey);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpGet("{raceKey}")]
+        public async Task<IActionResult> GetResults(string raceKey)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var canEdit = await _raceService.CanUserEdit(raceKey, User);
+            if (!canEdit)
+            {
+                return Unauthorized();
+            }
+
+            var response = await _resultService.GetRaceResults(raceKey);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [AllowAnonymous]
+        [HttpGet("categories/{key}")]
+        public async Task<IActionResult> GetCategories(string key)
+        {
+            var response = await _resultService.GetCategoriesAsync(key);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [AllowAnonymous]
+        [HttpGet("category/{id}")]
+        public async Task<IActionResult> GetGategoryResults(int id)
+        {
+            var response = await _resultService.GetCategoryResultsAsync(id);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
                 ResponseType.BadRequest => BadRequest(),
                 ResponseType.Unauthorization => Unauthorized(),
                 _ => BadRequest()

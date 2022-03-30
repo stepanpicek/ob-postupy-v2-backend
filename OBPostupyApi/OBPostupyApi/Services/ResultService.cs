@@ -1,8 +1,13 @@
-﻿using OBPostupyApi.Enums;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
+using OBPostupyApi.Dto.Responses;
+using OBPostupyApi.Enums;
 using OBPostupyApi.Readers;
 using OBPostupyApi.Repositories;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -12,13 +17,120 @@ namespace OBPostupyApi.Services
     {
         private readonly IResultsReader _resultsReader;
         private readonly IRaceRepository _raceRepository;
+        private readonly IResultRepository _resultRepository;
         private readonly HttpClient _httpClient;
+        private readonly ILogger<ResultService> _logger;
 
-        public ResultService(IResultsReader resultsReader, HttpClient httpClient, IRaceRepository raceRepository)
+        public ResultService(IResultsReader resultsReader, HttpClient httpClient, IRaceRepository raceRepository, IResultRepository resultRepository, ILogger<ResultService> logger)
         {
             _resultsReader = resultsReader;
             _httpClient = httpClient;
             _raceRepository = raceRepository;
+            _resultRepository = resultRepository;
+            _logger = logger;
+        }
+
+        public async Task<ResponseType> DeleteResults(string raceId)
+        {
+            try
+            {
+                await _resultRepository.DeleteResultsAsync(raceId);
+                return ResponseType.OK;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Error during deleting results");
+                return ResponseType.BadRequest;
+            }
+        }
+
+        public async Task<CategoriesResponse> GetCategoriesAsync(string raceId)
+        {
+            var categories = await _resultRepository.GetCategoriesAsync(raceId);
+            if(categories == null)
+            {
+                return new CategoriesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var categoriesResponse = categories.Select(c => new CategoryResponse
+            {
+                Id = c.Id,
+                CourseId = c.CourseId,
+                Name = c.Name
+            }).OrderBy(c => c.Name).ToList();
+
+            return new CategoriesResponse { ResponseType = ResponseType.OK, Categories = categoriesResponse };
+        }
+
+        public async Task<CategoryResultsResponse> GetCategoryResultsAsync(int id)
+        {
+            var results = await _resultRepository.GetCategoryResultByIdAsync(id);
+            if (results == null)
+            {
+                return new CategoryResultsResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var resultsResponse = results.PersonResults
+                .OrderBy(p => p.Position)
+                .Select(p => new PersonResultsResponse
+                {
+                    Id = p.Id,
+                    FirstName = p.Person?.FirstName,
+                    LastName = p.Person?.LastName,
+                    Position = p.Position,
+                    IsPathUploaded = p.Path != null
+                }).ToList();
+
+            return new CategoryResultsResponse { ResponseType= ResponseType.OK, People = resultsResponse };
+        }
+
+        public async Task<ResultsResponse> GetRaceResults(string raceId)
+        {
+            var categories = await _raceRepository.GetCategoriesAsync(raceId);
+            if(categories == null)
+            {
+                return new ResultsResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var categoriesResponse = categories.OrderBy(c => c.Name).Select(c =>
+            new CategoryResultsResponse
+            {
+                Category = c.Name,
+                Id = c.Id,
+                People = c.PersonResults.OrderBy(p => p.Position).Select(p => new PersonResultsResponse
+                {
+                    Id=p.Id,
+                    FirstName = p.Person?.FirstName,
+                    LastName = p.Person?.LastName,
+                    Position = p.Position,
+                    TimeValue = (p.FinishTime - p.StartTime),
+                    RegNumber = p.Person.RegNumbers.FirstOrDefault(),
+                    Status = p.Status.ToLowerInvariant()
+                }).ToList()
+            }).ToList();
+
+            AddTimeLoss(categoriesResponse);
+            return new ResultsResponse
+            {
+                ResponseType = ResponseType.OK,
+                Categories = categoriesResponse
+            };
+        }
+
+        private void AddTimeLoss(List<CategoryResultsResponse> categories)
+        {
+            foreach(var category in categories)
+            {
+                var first = category.People.FirstOrDefault();
+                for(int i = 1; i < category.People.Count; i++)
+                {
+                    var loss = category?.People[i]?.TimeValue - first?.TimeValue;
+                    if (loss.HasValue)
+                    {
+                        category.People[i].TimeLoss = $"+ {loss}";
+                    }
+                }
+            }
         }
 
         public async Task<ResponseType> SaveOrisResultsAsync(string raceId, string orisId)

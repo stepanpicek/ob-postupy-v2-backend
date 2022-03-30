@@ -43,6 +43,7 @@ namespace OBPostupyApi.Repositories
                 .Where(r => r.Key == key)
                 .Include(r => r.Categories)
                 .ThenInclude(c => c.PersonResults)
+                .ThenInclude(p => p.Person)
                 .Select(r => r.Categories)
                 .SingleOrDefaultAsync();
         }

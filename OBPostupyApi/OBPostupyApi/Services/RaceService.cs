@@ -5,6 +5,7 @@ using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Repositories;
 using System;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -14,10 +15,16 @@ namespace OBPostupyApi.Services
     {
         private readonly IRaceRepository _raceRepository;
         private readonly UserManager<User> _userManager;
-        public RaceService(IRaceRepository raceRepository, UserManager<User> userManager)
+        private readonly IMapService _mapService;
+        private readonly IResultService _resultService;
+        private readonly ICourseRepository _courseRepository;
+        public RaceService(IRaceRepository raceRepository, UserManager<User> userManager, IMapService mapService, IResultService resultService, ICourseRepository courseRepository)
         {
             _raceRepository = raceRepository;
             _userManager = userManager;
+            _mapService = mapService;
+            _resultService = resultService;
+            _courseRepository = courseRepository;
         }
 
         public async Task<EditRaceResponse> GetRaceToEditAsync(string raceKey, ClaimsPrincipal userClaims)
@@ -41,6 +48,10 @@ namespace OBPostupyApi.Services
                 };
             }
 
+            var categories = await _resultService.GetCategoriesAsync(raceKey);
+            var mapInfo = await _mapService.GetMapInfoAsync(raceKey);
+            var courseData = await _courseRepository.GetCourseDataByRaceAsync(raceKey);
+
             return new EditRaceResponse
             {
                 ResponseType = ResponseType.OK,
@@ -48,7 +59,27 @@ namespace OBPostupyApi.Services
                 Key = raceKey,
                 Date = race.StartTime,
                 Name = race.Name,
-                UserId = race.UserId
+                UserId = race.UserId,
+                Results = new EditRaceResultResponse
+                {
+                    IsUploaded = categories.ResponseType == ResponseType.OK &&
+                        categories.Categories != null &&
+                        categories.Categories.Count > 0
+                },
+                Map = new EditRaceMapResponse
+                {
+                    IsUploaded = mapInfo.ResponseType == ResponseType.OK,
+                    IsCalibrated = mapInfo.Position != null &&
+                        mapInfo.Position.Count > 0 &&
+                        mapInfo.Position.All(p => p.Lat != 0 && p.Lon != 0)
+                },
+                CourseData = new EditRaceCourseDataResponse
+                {
+                    IsUploaded = courseData != null && courseData.Courses != null && courseData.Courses.Count > 0,
+                    AreCoursesConnected = categories.ResponseType == ResponseType.OK &&
+                        categories.Categories != null &&
+                        categories.Categories.All(c => c.CourseId != null)
+                }
             };
         }
 
@@ -82,6 +113,57 @@ namespace OBPostupyApi.Services
             }
 
             return true;
+        }
+
+        public async Task<RacesResponse> GetPublicRacesAsync()
+        {
+            var races = await _raceRepository.GetAllPublicRacesAsync();
+            if(races == null)
+            {
+                return new RacesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var racesResponse = races.Select(r => new RaceResponse
+            {
+                Date = r.StartTime,
+                Name = r.Name,
+                Key = r.Key,
+                Organizer = r.Organizer,
+                OrisId = r.OrisId
+            }).ToList();
+
+            return new RacesResponse
+            {
+                ResponseType = ResponseType.OK,
+                Races = racesResponse
+            };
+        }
+
+        public async Task<ResponseType> GetRaceToShowAsync(string raceKey, ClaimsPrincipal userClaims)
+        {
+            var race = await _raceRepository.GetRaceByKeyAsync(raceKey);
+            if(race == null)
+            {
+                return ResponseType.BadRequest;
+            }
+            
+            if(race.Type != RaceType.Private)
+            {
+                return ResponseType.OK;
+            }
+
+            if(race.Type == RaceType.Private)
+            {
+                var user = await _userManager.GetUserAsync(userClaims);
+
+                if(await CanUserEdit(race, user))
+                {
+                    return ResponseType.OK;
+                }
+                return ResponseType.Unauthorization;
+            }
+
+            return ResponseType.BadRequest;
         }
     }
 }

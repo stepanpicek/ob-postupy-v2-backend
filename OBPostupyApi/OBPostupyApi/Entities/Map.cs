@@ -8,8 +8,6 @@ namespace OBPostupyApi.Entities
     {
         public int Id { get; set; }
         public string Name { get; set; }
-
-        [JsonIgnore]
         public string PathToFile { get; set; }
         public int Scale { get; set; }
         public int? RaceId { get; set; }
@@ -26,8 +24,12 @@ namespace OBPostupyApi.Entities
         {
             get
             {
-                string[] data = CornersString.Split(';');
                 var coorners = new List<Position>();
+                if (CornersString == null)
+                {
+                    return coorners;
+                }
+                string[] data = CornersString.Split(';');
                 foreach (var coordinates in data)
                 {
                     string[] coordinate = coordinates.Split('|');

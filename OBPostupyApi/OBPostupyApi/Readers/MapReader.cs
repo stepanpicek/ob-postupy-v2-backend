@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Logging;
 using OBPostupyApi.Dto.Readers;
 using SharpKml.Base;
 using SharpKml.Dom;
@@ -14,10 +15,12 @@ namespace OBPostupyApi.Readers
     public class MapReader : IMapReader
     {
         private readonly ILogger<MapReader> _logger;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
-        public MapReader(ILogger<MapReader> logger)
+        public MapReader(ILogger<MapReader> logger, IWebHostEnvironment hostingEnvironment)
         {
             _logger = logger;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public MapData ReadKmz(Stream fileStream)
@@ -54,7 +57,8 @@ namespace OBPostupyApi.Readers
                     ZipArchiveEntry entry = archive.GetEntry(pathToImage);
                     string path = GetFilePath(rootPath, entry.Name);
                     string finalPath = Path.Combine(rootPath, path);
-                    ZipFileExtensions.ExtractToFile(entry, finalPath);
+                    string completePath = Path.Combine(_hostingEnvironment.WebRootPath, finalPath);
+                    ZipFileExtensions.ExtractToFile(entry, completePath);
                     return finalPath;
                 }
             }
@@ -66,8 +70,11 @@ namespace OBPostupyApi.Readers
         {
             string path = GetFilePath(rootPath, fileName);
             string finalPath = Path.Combine(rootPath, path);
-            using var fileStream = new FileStream(finalPath, FileMode.Create, FileAccess.Write);
-            await stream.CopyToAsync(fileStream);
+            string completePath = Path.Combine(_hostingEnvironment.WebRootPath, finalPath);
+            using (var fileStream = new FileStream(completePath, FileMode.Create, FileAccess.Write))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
             return finalPath;
         }
 

@@ -15,6 +15,25 @@ namespace OBPostupyApi.Repositories
             _context = context;
         }
 
+        public async Task<Course> GetCourseByCategoryIdAsync(int categoryId)
+        {
+            return (await _context.Categories
+                .Where(c => c.Id == categoryId)
+                .Include(c => c.Course)
+                .ThenInclude(c => c.CourseControl)
+                .ThenInclude(cc => cc.Control)
+                .SingleOrDefaultAsync())?.Course;
+        }
+
+        public async Task<Course> GetCourseByIdAsync(int courseId)
+        {
+            return await _context.Courses
+                .Where(c => c.Id == courseId)
+                .Include(c => c.CourseControl)
+                    .ThenInclude(cc => cc.Control)
+                .SingleOrDefaultAsync();
+        }
+
         public async Task<CourseData> GetCourseDataByRaceAsync(string raceKey)
         {
             return await _context.CourseData

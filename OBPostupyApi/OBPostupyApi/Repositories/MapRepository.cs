@@ -15,6 +15,15 @@ namespace OBPostupyApi.Repositories
             _context = context;
         }
 
+        public async Task DeleteMapAsync(Map map)
+        {
+            if(map != null)
+            {
+                _context.Maps.Remove(map);
+                await _context.SaveChangesAsync();
+            }
+        }
+
         public async Task<Map> GetMapByRaceAsync(string raceKey)
         {
             return await _context.Maps.Where(m => m.Race.Key == raceKey).FirstOrDefaultAsync();

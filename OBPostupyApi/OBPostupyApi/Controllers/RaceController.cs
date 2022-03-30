@@ -38,9 +38,37 @@ namespace OBPostupyApi.Controllers
         }
 
         [HttpGet("edit/{key}")]
-        public async Task<IActionResult> Get(string key)
+        public async Task<IActionResult> GetToEdit(string key)
         {
             var response = await _raceService.GetRaceToEditAsync(key, User);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [AllowAnonymous]
+        [HttpGet("show/{key}")]
+        public async Task<IActionResult> GetToShow(string key)
+        {
+            var response = await _raceService.GetRaceToShowAsync(key, User);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [AllowAnonymous]
+        [HttpGet("all-public")]
+        public async Task<IActionResult> GetAllPublicRaces()
+        {
+            var response = await _raceService.GetPublicRacesAsync();
             return response.ResponseType switch
             {
                 ResponseType.OK => Ok(response),

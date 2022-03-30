@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OBPostupyApi.Contexts;
 using OBPostupyApi.Entities;
+using OBPostupyApi.Readers;
 using OBPostupyApi.Repositories;
 using OBPostupyApi.Services;
 using OBPostupyApi.Settings;
@@ -103,7 +104,23 @@ namespace OBPostupyApi
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IRaceService, RaceService>();
+            services.AddScoped<IAnalysisService, AnalysisService>();
+            services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<IMapService, MapService>();
+            services.AddScoped<IPathService, PathService>();
+            //services.AddScoped<IResultService, ResultService>();
+            services.AddHttpClient<IResultService, ResultService>();
+
+            services.AddScoped<ICoursesReader, CoursesReader>();
+            services.AddScoped<IMapReader, MapReader>();
+            services.AddScoped<IResultsReader, ResultsReader>();
+
             services.AddScoped<IRaceRepository, RaceRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
+            services.AddScoped<ICourseRepository, CourseRepository>();
+            services.AddScoped<IMapRepository, MapRepository>();
+            services.AddScoped<IPathRepository, PathRepository>();
+            services.AddScoped<IResultRepository, ResultRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -117,6 +134,8 @@ namespace OBPostupyApi
             }
 
             app.UseHttpsRedirection();
+
+            app.UseStaticFiles();
 
             app.UseRouting();
             app.UseCors(x => x

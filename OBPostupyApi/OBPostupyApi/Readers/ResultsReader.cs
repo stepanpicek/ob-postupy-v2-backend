@@ -111,7 +111,7 @@ namespace OBPostupyApi.Readers
 
             if (ids?.Count == 1) return ids?.FirstOrDefault()?.Value;
 
-            return ids?.FirstOrDefault(i => i?.Attributes()?.FirstOrDefault(a => a.Name.LocalName == "CZE") != null)?.Value;
+            return ids?.FirstOrDefault(i => i?.Attributes("type")?.FirstOrDefault(a => a?.Value == "CZE") != null)?.Value;
         }
 
         private DateTime GetStartTime(XElement result)
