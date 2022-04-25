@@ -78,7 +78,9 @@ namespace OBPostupyApi.Services
                     FirstName = p.Person?.FirstName,
                     LastName = p.Person?.LastName,
                     Position = p.Position,
-                    IsPathUploaded = p.Path != null
+                    IsPathUploaded = p.Path != null,
+                    Status = p.Status?.ToLowerInvariant(),
+                    StartTime = p.StartTime.ToString("O")
                 }).ToList();
 
             return new CategoryResultsResponse { ResponseType= ResponseType.OK, People = resultsResponse };

@@ -14,6 +14,7 @@ using OBPostupyApi.Readers;
 using OBPostupyApi.Repositories;
 using OBPostupyApi.Services;
 using OBPostupyApi.Settings;
+using System;
 using System.Text;
 
 namespace OBPostupyApi
@@ -65,7 +66,9 @@ namespace OBPostupyApi
 
             services
                 .Configure<JwtSettings>(Configuration.GetSection("Jwt"))
-                .Configure<EmailSettings>(Configuration.GetSection("Email"));
+                .Configure<EmailSettings>(Configuration.GetSection("Email"))
+                .Configure<StravaSettings>(Configuration.GetSection("Strava"))
+                .Configure<FrontEndSettings>(Configuration.GetSection("FrontEnd"));
 
             services.AddDbContext<RepositoryContext>(db =>
             {
@@ -100,6 +103,24 @@ namespace OBPostupyApi
                 .AddEntityFrameworkStores<RepositoryContext>()
                 .AddDefaultTokenProviders();
 
+            services
+                .AddAuthentication((options) =>
+                {
+                    options.DefaultSignInScheme = "External";
+                })
+                .AddCookie((options) =>
+                {
+                    options.AccessDeniedPath = "";
+                })
+                .AddCookie("External")
+                .AddStrava(options => {
+                    options.ClientId = Configuration["Strava:ClientId"];
+                    options.ClientSecret = Configuration["Strava:ClientSecret"];
+                    options.Scope.Clear();
+                    options.Scope.Add("read,activity:read_all,profile:read_all,read_all");
+                    options.SaveTokens = true;
+                });
+
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IAuthService, AuthService>();
@@ -108,8 +129,12 @@ namespace OBPostupyApi
             services.AddScoped<ICourseService, CourseService>();
             services.AddScoped<IMapService, MapService>();
             services.AddScoped<IPathService, PathService>();
-            //services.AddScoped<IResultService, ResultService>();
+            services.AddScoped<ISettingsService, SettingsService>();
             services.AddHttpClient<IResultService, ResultService>();
+            services.AddHttpClient<IStravaService, StravaService>((client) =>
+            {
+                client.BaseAddress = new Uri(Configuration["Strava:Uri"]);
+            });
 
             services.AddScoped<ICoursesReader, CoursesReader>();
             services.AddScoped<IMapReader, MapReader>();
@@ -121,6 +146,8 @@ namespace OBPostupyApi
             services.AddScoped<IMapRepository, MapRepository>();
             services.AddScoped<IPathRepository, PathRepository>();
             services.AddScoped<IResultRepository, ResultRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ISettingsRepository, SettingsRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

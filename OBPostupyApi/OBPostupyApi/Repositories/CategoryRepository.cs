@@ -20,6 +20,16 @@ namespace OBPostupyApi.Repositories
         {
             return await _context.Categories
                 .Where(c => c.Race.Key == raceKey)
+                .Include(c => c.PersonResults)
+                .ThenInclude(c => c.SplitTimes)
+                .ToListAsync();
+        }
+
+        public async Task<List<Category>> GetCategoriesWithCourseAsync(string raceKey)
+        {
+            return await _context.Categories
+                .Where(c => c.Race.Key == raceKey)
+                .Include(c => c.Course)
                 .ToListAsync();
         }
 

@@ -11,6 +11,13 @@ namespace OBPostupyApi.Extensions
         {
             if (mapData != null && map != null)
             {
+                if(mapData.Corners != null && mapData.Corners.Count > 0)
+                {
+                    map.Corners = mapData.Corners;
+                    map.Rotation = mapData.Rotation;
+                    return;
+                }
+
                 if (mapData.North != null &&
                     mapData.South != null &&
                     mapData.East != null &&

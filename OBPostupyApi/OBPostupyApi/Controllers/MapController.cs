@@ -7,6 +7,8 @@ using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Services;
 using System.Threading.Tasks;
+using System.Linq;
+using OBPostupyApi.Entities;
 
 namespace OBPostupyApi.Controllers
 {
@@ -74,7 +76,8 @@ namespace OBPostupyApi.Controllers
                 West = model.West,
                 South = model.South,
                 North = model.North,
-                Rotation = model.Rotation
+                Rotation = model.Rotation,
+                Corners = model.Corners.Select(c => new Position(c.Lat, c.Lon)).ToList()
             };
 
             var response = await _mapService.CalibrateMapAsync(model.RaceKey, mapData);
@@ -131,12 +134,10 @@ namespace OBPostupyApi.Controllers
         public async Task<IActionResult> GetImage(string key)
         {
             var response = await _mapService.GetMapImageAsync(key);
-            var bytes = response.ImageStream.ToArray();
-            response.ImageStream.Dispose();
 
             return response.ResponseType switch
             {
-                ResponseType.OK => File(bytes, "image/jpeg"),
+                ResponseType.OK => File(response.Image, "image/jpeg"),
                 ResponseType.BadRequest => BadRequest(),
                 ResponseType.Unauthorization => Unauthorized(),
                 _ => BadRequest()

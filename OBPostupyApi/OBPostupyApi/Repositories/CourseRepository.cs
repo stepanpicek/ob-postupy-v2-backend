@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OBPostupyApi.Contexts;
 using OBPostupyApi.Entities;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,6 +14,21 @@ namespace OBPostupyApi.Repositories
         public CourseRepository(RepositoryContext context)
         {
             _context = context;
+        }
+
+        public async Task DeleteRaceCoursesAsync(string raceKey)
+        {
+            Race race = await _context.Races.Where(r => r.Key == raceKey)
+                .SingleOrDefaultAsync();
+
+            var controls = await _context.Controls.Where(c => c.CourseDataId == race.CourseData.Id).ToListAsync();
+            var courses = await _context.Courses.Where(c => c.CourseDataId == race.CourseData.Id).ToListAsync();
+
+            _context.Controls.RemoveRange(controls);
+            _context.Courses.RemoveRange(courses);
+            _context.CourseData.Remove(race?.CourseData);
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<Course> GetCourseByCategoryIdAsync(int categoryId)
@@ -44,6 +60,15 @@ namespace OBPostupyApi.Repositories
                 .Include(c => c.Courses)
                     .ThenInclude(c => c.CourseSplits)
                         .ThenInclude(c => c.Split)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<List<Course>> GetCoursesAsync(string raceKey)
+        {
+            return await _context.CourseData
+                .Where(c => c.Race.Key == raceKey)
+                .Include(c => c.Courses)
+                .Select(c => c.Courses)
                 .FirstOrDefaultAsync();
         }
     }

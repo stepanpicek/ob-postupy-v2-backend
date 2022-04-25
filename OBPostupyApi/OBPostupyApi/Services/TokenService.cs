@@ -25,14 +25,12 @@ namespace OBPostupyApi.Services
 
         public async Task<string> GenerateTokenAsync(User user, DateTime expiration)
         {
-            var strava = await _userManager.GetAuthenticationTokenAsync(user, "Strava", "access_token") ?? "null";
             var claims = new List<Claim>
             {
                  new Claim(ClaimTypes.NameIdentifier, user.Id),
                  new Claim("firstName", user.FirstName),
                  new Claim("lastName", user.LastName),
                  new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                 new Claim("strava", strava),
                  new Claim("expiration", expiration.ToString()),
                  new Claim(JwtRegisteredClaimNames.Sub,user.Email),
                  new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

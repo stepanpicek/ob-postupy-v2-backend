@@ -3,12 +3,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using OBPostupyApi.Dto.Responses;
 using OBPostupyApi.Entities;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Services;
+using OBPostupyApi.Settings;
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace OBPostupyApi.Controllers
@@ -20,13 +23,20 @@ namespace OBPostupyApi.Controllers
         private readonly UserManager<User> _userManager;
         private readonly ITokenService _tokenService;
         private readonly IEmailService _emailService;
+        private readonly FrontEndSettings _frontEndSettings;
         private readonly ILogger<AuthenticateController> _logger;
 
-        public AuthenticateController(UserManager<User> userManager, ITokenService tokenService, IEmailService emailService, ILogger<AuthenticateController> logger)
+        public AuthenticateController(
+            UserManager<User> userManager, 
+            ITokenService tokenService, 
+            IEmailService emailService, 
+            IOptions<FrontEndSettings> options,
+            ILogger<AuthenticateController> logger)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _emailService = emailService;
+            _frontEndSettings = options?.Value ?? throw new ArgumentNullException(nameof(options));
             _logger = logger;
         }
 
@@ -73,7 +83,7 @@ namespace OBPostupyApi.Controllers
             if (registerResult.Succeeded && addRoleResult.Succeeded)
                 return Ok();
 
-            return BadRequest(new { register = registerResult.Errors, role = registerResult.Errors });
+            return BadRequest(new { register = registerResult.Errors });
         }
 
         [HttpPost("password")]
@@ -116,12 +126,13 @@ namespace OBPostupyApi.Controllers
                 return BadRequest();
             }
 
-            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var token = Convert.ToBase64String(Encoding.UTF8.GetBytes(await _userManager.GeneratePasswordResetTokenAsync(user)));
 
-            var uri = HttpContext.Request.Host.Value;
+            var uri = _frontEndSettings.Uri;
             await _emailService.SendEmailAsync(
                 model.Email, 
-                "Reset hesla na OB Postupech", $"Pro reset hesla přejděte na odkaz: <a href=\"{uri}/reset-hesla?email={model.Email}&token={token}\">link</a>");
+                "Reset hesla na OB Postupech",
+                $"Pro reset hesla přejděte na odkaz: <a href=\"{uri}/reset-hesla?email={model.Email}&token={token}\">link</a>");
 
             return Ok();
         }
@@ -141,7 +152,9 @@ namespace OBPostupyApi.Controllers
                 return BadRequest();
             }
 
-            var resetPasswordResult = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            var token = Encoding.UTF8.GetString(Convert.FromBase64String(model.Token));
+
+            var resetPasswordResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
             if (resetPasswordResult.Succeeded)
             {
                 return Ok();

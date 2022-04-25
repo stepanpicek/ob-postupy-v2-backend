@@ -21,7 +21,7 @@ namespace OBPostupyApi.Controllers
             _courseService = courseService;
         }
 
-        [HttpPost("upload")]
+        [HttpPost]
         public async Task<IActionResult> Upload([FromForm] UploadCourseModel model)
         {
             if (!ModelState.IsValid)
@@ -45,6 +45,30 @@ namespace OBPostupyApi.Controllers
             };
         }
 
+        [HttpGet("course-category/{raceKey}")]
+        public async Task<IActionResult> GetCourseToCategory(string raceKey)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var canUpload = await _raceService.CanUserEdit(raceKey, User);
+            if (!canUpload)
+            {
+                return Unauthorized();
+            }
+
+            var response = await _courseService.GetCoursesToCategoriesAsync(raceKey);
+            return response?.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
         [HttpPost("course-category")]
         public async Task<IActionResult> CourseToCategory([FromBody] CourseToCategoryModel model)
         {
@@ -60,6 +84,30 @@ namespace OBPostupyApi.Controllers
             }
 
             var response = await _courseService.AddCoursesToCategoriesAsync(model.RaceKey, model.CourseCategories);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpDelete("{raceKey}")]
+        public async Task<IActionResult> Delete(string raceKey)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var canUpload = await _raceService.CanUserEdit(raceKey, User);
+            if (!canUpload)
+            {
+                return Unauthorized();
+            }
+
+            var response = await _courseService.DeleteCoursesAsync(raceKey);
             return response switch
             {
                 ResponseType.OK => Ok(),

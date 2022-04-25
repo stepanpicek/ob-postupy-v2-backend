@@ -1,4 +1,5 @@
 ﻿using OBPostupyApi.Entities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace OBPostupyApi.Repositories
@@ -8,5 +9,7 @@ namespace OBPostupyApi.Repositories
         Task<CourseData> GetCourseDataByRaceAsync(string raceKey);
         Task<Course> GetCourseByCategoryIdAsync(int categoryId);
         Task<Course> GetCourseByIdAsync(int id);
+        Task<List<Course>> GetCoursesAsync(string raceKey);
+        Task DeleteRaceCoursesAsync(string raceKey);
     }
 }

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 
 namespace OBPostupyApi.Services
@@ -246,25 +247,36 @@ namespace OBPostupyApi.Services
             return locations;
         }
 
-        public Image GetMapWithWaterMark(string pathToImage)
+        public byte[] GetMapWithWaterMark(string pathToImage)
         {
-            Image image = Image.FromFile(pathToImage);
+            byte[] imageBytes = null;            
+            Image image = null;
+            using (Stream stream = File.OpenRead(pathToImage))
+            {
+                image = Image.FromStream(stream);
+            }
             Graphics graph = Graphics.FromImage(image);
             Font drawFont = new Font("Arial", 50, FontStyle.Bold);
             SolidBrush drawBrush = new SolidBrush(Color.FromArgb(70, 0, 0, 255));
-
-
-            string drawString = "OB POSTUPY ČSOS";
-            for (int j = 50; j < image.Height; j += 400)
+            using (var ms = new MemoryStream())
             {
-                for (int i = 50; i < image.Width; i += 1500)
+                string drawString = "OB POSTUPY ČSOS";
+                for (int j = 50; j < image.Height; j += 400)
                 {
-                    PointF drawPoint = new PointF(i, j);
-                    graph.DrawString(drawString, drawFont, drawBrush, drawPoint);
+                    for (int i = 50; i < image.Width; i += 1500)
+                    {
+                        PointF drawPoint = new PointF(i, j);
+                        graph.DrawString(drawString, drawFont, drawBrush, drawPoint);
+                    }
                 }
-            }
-
-            return image;
+                image.Save(ms, image.RawFormat);
+                imageBytes = ms.ToArray();
+                image?.Dispose();
+                graph.Dispose();
+                drawFont.Dispose();
+                drawBrush.Dispose();
+            };
+            return imageBytes;
         }
     }
 }

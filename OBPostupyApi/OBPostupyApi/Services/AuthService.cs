@@ -15,13 +15,15 @@ namespace OBPostupyApi.Services
     {
         private readonly UserManager<User> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IStravaService _stravaService;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, ILogger<AuthService> logger)
+        public AuthService(UserManager<User> userManager, RoleManager<IdentityRole> roleManager, ILogger<AuthService> logger, IStravaService stravaService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _logger = logger;
+            _stravaService = stravaService;
         }
 
         public async Task<ResponseType> AddAminRoleAsync(ClaimsPrincipal userClaims, string userId)
@@ -83,6 +85,7 @@ namespace OBPostupyApi.Services
                 NickName = user.NickName,
                 RegNumber = user.RegNumber,
                 Birthdate = user.Birthdate == default(DateTime) ? null : user.Birthdate,
+                IsStravaConnected = (await _stravaService.IsUserStravaAuthAsync(userClaims)).IsAuth
             };
             return response;
         }

@@ -2,9 +2,9 @@
 
 namespace OBPostupyApi.Dto.Responses
 {
-    public class MapImageResponse
+    public class StravaAuthResponse
     {
         public ResponseType ResponseType { get; set; }
-        public byte[] Image { get; set; }
+        public bool IsAuth { get; set; }
     }
 }

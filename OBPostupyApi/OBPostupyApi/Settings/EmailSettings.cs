@@ -5,5 +5,7 @@
         public string ApiKey { get; set; }
         public string EmailAddress { get; set; }
         public string EmailName { get; set; }
+        public string ReplyEmail { get; set; }
+        public string ReplyName { get; set; }
     }
 }

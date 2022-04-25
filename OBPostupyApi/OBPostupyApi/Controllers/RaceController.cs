@@ -37,6 +37,32 @@ namespace OBPostupyApi.Controllers
             return Ok(raceKey);
         }
 
+        [HttpPost("update")]
+        public async Task<IActionResult> Update([FromBody] UpdateRaceModel model)
+        {
+            var response = await _raceService.UpdateRaceAsync(model, User);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpDelete("{key}")]
+        public async Task<IActionResult> Delete(string key)
+        {
+            var response = await _raceService.DeleteRaceAsync(key, User);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
         [HttpGet("edit/{key}")]
         public async Task<IActionResult> GetToEdit(string key)
         {
@@ -69,6 +95,46 @@ namespace OBPostupyApi.Controllers
         public async Task<IActionResult> GetAllPublicRaces()
         {
             var response = await _raceService.GetPublicRacesAsync();
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpGet("by-user")]
+        public async Task<IActionResult> GetAllUserRaces()
+        {
+            var response = await _raceService.GetUserRacesAsync(User);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpGet("participating")]
+        public async Task<IActionResult> GetUserParticipatingRaces()
+        {
+            var response = await _raceService.GetUserParticipatingRacesAsync(User);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpGet("all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllRaces()
+        {
+            var response = await _raceService.GetAllRacesAsync(User);
             return response.ResponseType switch
             {
                 ResponseType.OK => Ok(response),

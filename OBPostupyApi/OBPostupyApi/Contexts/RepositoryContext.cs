@@ -30,6 +30,7 @@ namespace OBPostupyApi.Contexts
         public DbSet<Location> Locations { get; set; }
         public DbSet<CourseSplit> CourseSplits { get; set; }
         public DbSet<CourseData> CourseData { get; set; }
+        public DbSet<Setting> Settings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -24,7 +24,8 @@ namespace OBPostupyApi.Services
                 From = new EmailAddress(_emailSettings.EmailAddress, _emailSettings.EmailName),
                 Subject = subject,
                 PlainTextContent = message,
-                HtmlContent = message
+                HtmlContent = message,
+                ReplyTo = new EmailAddress(_emailSettings.ReplyEmail)
             };
             msg.AddTo(new EmailAddress(email));
 

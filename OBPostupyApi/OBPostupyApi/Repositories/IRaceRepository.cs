@@ -8,9 +8,11 @@ namespace OBPostupyApi.Repositories
     {
         public Task CreateRaceAsync(Race race);
         public Task<Race> GetRaceByKeyAsync(string key);
+        public Task<List<Race>> GetAllRacesAsync();
         public Task<List<Race>> GetAllPublicRacesAsync();
+        public Task<List<Race>> GetAllUserRacesAsync(string userId);
+        public Task<List<Race>> GetAllUserRacesByRegNumberAsync(string regNumber);
         public Task<List<Race>> GetAllOrisRacesInMonthAsync();
-        public Task<List<Race>> GetAllUserRacesAsync(string id);
         public Task<List<Category>> GetCategoriesAsync(string key);
         public Task DeleteRaceAsync(string key);
         public Task SaveAsync();

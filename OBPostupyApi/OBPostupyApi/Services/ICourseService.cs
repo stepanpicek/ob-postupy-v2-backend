@@ -12,5 +12,7 @@ namespace OBPostupyApi.Services
         Task<ResponseType> SaveCoursesAsync(string raceKey, Stream fileStream);
         Task<ResponseType> AddCoursesToCategoriesAsync(string raceKey, List<CourseToCategory> courseToCategories);
         Task<CourseResponse> GetCourseAsync(int id);
+        Task<CoursesToCategoryResponse> GetCoursesToCategoriesAsync(string raceKey);
+        Task<ResponseType> DeleteCoursesAsync(string raceKey);
     }
 }

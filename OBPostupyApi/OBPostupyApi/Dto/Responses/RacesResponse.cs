@@ -17,5 +17,6 @@ namespace OBPostupyApi.Dto.Responses
         public DateTime Date { get; set; }
         public string Organizer { get; set; }
         public int OrisId { get; set; }
+        public string Type { get; set; }
     }
 }

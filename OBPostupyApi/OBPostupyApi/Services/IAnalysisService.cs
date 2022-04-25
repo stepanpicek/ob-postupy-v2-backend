@@ -14,6 +14,6 @@ namespace OBPostupyApi.Services
         double GetPathDistance(List<Location> locations);
         (double Elevation, double Descent) GetElevation(List<Location> locations);
         List<Location> GetDrawnPath(List<List<Location>> splits, PersonResult personResult);
-        Image GetMapWithWaterMark(string pathToImage);
+        byte[] GetMapWithWaterMark(string pathToImage);
     }
 }

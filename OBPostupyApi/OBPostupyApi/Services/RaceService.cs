@@ -107,6 +107,11 @@ namespace OBPostupyApi.Services
         }
         public async Task<bool> CanUserEdit(Race race, User user)
         {
+            if (user == null || race == null)
+            {
+                return false;
+            }
+
             if (user?.Id != race?.UserId && !await _userManager.IsInRoleAsync(user, Role.Admin.ToString()))
             {
                 return false;
@@ -164,6 +169,145 @@ namespace OBPostupyApi.Services
             }
 
             return ResponseType.BadRequest;
+        }
+
+        public async Task<RacesResponse> GetUserRacesAsync(ClaimsPrincipal userClaims)
+        {
+            var user = await _userManager.GetUserAsync(userClaims);
+            if(user == null)
+            {
+                return new RacesResponse { ResponseType = ResponseType.Unauthorization };
+            }
+
+            var races = await _raceRepository.GetAllUserRacesAsync(user.Id);
+            if (races == null)
+            {
+                return new RacesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var racesResponse = races.Select(r => new RaceResponse
+            {
+                Date = r.StartTime,
+                Name = r.Name,
+                Key = r.Key,
+                Organizer = r.Organizer,
+                OrisId = r.OrisId,
+                Type = r.Type.ToString()
+            }).ToList();
+
+            return new RacesResponse
+            {
+                ResponseType = ResponseType.OK,
+                Races = racesResponse
+            };
+        }
+
+        public async Task<RacesResponse> GetUserParticipatingRacesAsync(ClaimsPrincipal userClaims)
+        {
+            var user = await _userManager.GetUserAsync(userClaims);
+            if (user == null)
+            {
+                return new RacesResponse { ResponseType = ResponseType.Unauthorization };
+            }
+
+            if (string.IsNullOrEmpty(user.RegNumber))
+            {
+                return new RacesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var races = await _raceRepository.GetAllUserRacesByRegNumberAsync(user.RegNumber);
+            if (races == null)
+            {
+                return new RacesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var racesResponse = races.Select(r => new RaceResponse
+            {
+                Date = r.StartTime,
+                Name = r.Name,
+                Key = r.Key,
+                Organizer = r.Organizer,
+                OrisId = r.OrisId
+            }).ToList();
+
+            return new RacesResponse
+            {
+                ResponseType = ResponseType.OK,
+                Races = racesResponse
+            };
+        }
+
+        public async Task<ResponseType> DeleteRaceAsync(string raceKey, ClaimsPrincipal userClaims)
+        {
+            var race = await _raceRepository.GetRaceByKeyAsync(raceKey);
+            if (race == null)
+            {
+                return ResponseType.BadRequest;
+            }
+
+            if (!await CanUserEdit(raceKey, userClaims))
+            {
+                return ResponseType.Unauthorization;
+            }
+
+            await _raceRepository.DeleteRaceAsync(raceKey);
+
+            return ResponseType.OK;
+        }
+
+        public async Task<ResponseType> UpdateRaceAsync(UpdateRaceModel model, ClaimsPrincipal userClaims)
+        {
+            User user = await _userManager.GetUserAsync(userClaims);
+            Race race = await _raceRepository.GetRaceByKeyAsync(model.RaceKey);
+
+            if (race == null || user == null)
+            {
+                return ResponseType.BadRequest;
+            }
+
+            if (!await CanUserEdit(race, user))
+            {
+                return ResponseType.Unauthorization;
+            }
+
+            race.Name = model.Name;
+            race.StartTime = model.Date;
+            race.Type = model.Type;
+
+            await _raceRepository.SaveAsync();
+            return ResponseType.OK;
+        }
+
+        public async Task<AllRacesResponse> GetAllRacesAsync(ClaimsPrincipal userClaims)
+        {
+            var user = await _userManager.GetUserAsync(userClaims);
+            if (user == null || !await _userManager.IsInRoleAsync(user, Role.Admin.ToString()))
+            {
+                return new AllRacesResponse { ResponseType = ResponseType.Unauthorization };
+            }
+
+            var races = await _raceRepository.GetAllRacesAsync();
+            if (races == null)
+            {
+                return new AllRacesResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var racesResponse = races.Select(r => new ExtendedRaceResponse
+            {
+                Date = r.StartTime,
+                Name = r.Name,
+                Key = r.Key,
+                Organizer = r.Organizer,
+                Type = r.Type.ToString(),
+                UserEmail = r.User?.Email,
+                UserName = $"{r.User?.FirstName} {r.User?.LastName}",
+            }).ToList();
+
+            return new AllRacesResponse
+            {
+                ResponseType = ResponseType.OK,
+                Races = racesResponse
+            };
         }
     }
 }

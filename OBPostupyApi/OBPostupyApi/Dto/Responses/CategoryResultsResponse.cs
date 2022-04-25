@@ -20,6 +20,7 @@ namespace OBPostupyApi.Dto.Responses
         public string LastName { get; set; }
         public int? Position { get; set; }
         public string Time { get => TimeValue.ToString(); }
+        public string StartTime { get; set; }
 
         [JsonIgnore]
         public TimeSpan TimeValue { get; set; }

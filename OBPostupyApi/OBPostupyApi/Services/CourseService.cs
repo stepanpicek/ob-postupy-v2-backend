@@ -128,5 +128,41 @@ namespace OBPostupyApi.Services
                 ResponseType = ResponseType.OK
             };
         }
+
+        public async Task<ResponseType> DeleteCoursesAsync(string raceKey)
+        {
+            var courseData = await _courseRepository.GetCourseDataByRaceAsync(raceKey);
+            if (courseData == null)
+            {
+                return ResponseType.BadRequest;
+            }
+
+            await _courseRepository.DeleteRaceCoursesAsync(raceKey);
+            return ResponseType.OK;
+        }
+
+        public async Task<CoursesToCategoryResponse> GetCoursesToCategoriesAsync(string raceKey)
+        {
+            var race = await _raceRepository.GetRaceByKeyAsync(raceKey);
+            if (race == null)
+            {
+                return new CoursesToCategoryResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var categories = await _categoryRepository.GetCategoriesWithCourseAsync(raceKey);
+            var courses = await _courseRepository.GetCoursesAsync(raceKey);
+
+            return new CoursesToCategoryResponse
+            {
+                ResponseType = ResponseType.OK,
+                Categories = categories?.OrderBy(c => c.Name)?.Select(c => new CourseToCategoryResponse
+                {
+                    Name = c?.Name,
+                    Course = c?.Course?.Name
+
+                })?.ToList(),
+                Courses = courses?.OrderBy(c => c.Name)?.Select(c => c?.Name)?.ToList()
+            };
+        }
     }
 }

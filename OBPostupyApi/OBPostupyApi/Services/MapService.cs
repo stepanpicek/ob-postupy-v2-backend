@@ -7,6 +7,7 @@ using OBPostupyApi.Enums;
 using OBPostupyApi.Extensions;
 using OBPostupyApi.Readers;
 using OBPostupyApi.Repositories;
+using Polly;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -124,14 +125,11 @@ namespace OBPostupyApi.Services
                 return new MapImageResponse { ResponseType = ResponseType.BadRequest };
             }
 
-            using var ms = new MemoryStream();
             var image = _analysisService.GetMapWithWaterMark(path);
-            image.Save(ms, image.RawFormat);
-            image.Dispose();
             return new MapImageResponse
             {
                 ResponseType = ResponseType.OK,
-                ImageStream = ms
+                Image = image
             };
         }
 
@@ -146,7 +144,12 @@ namespace OBPostupyApi.Services
             var path = System.IO.Path.Combine(_hostingEnvironment.WebRootPath, map?.PathToFile ?? "");
             if (File.Exists(path))
             {
-                File.Delete(path);
+                Policy.Handle<Exception>()
+                   .WaitAndRetry(10, retryAttempt => TimeSpan.FromMilliseconds(500), (exception, time) =>
+                   {
+                       _logger.LogWarning(exception, "Error during deleting map file.");
+                   })
+                   .Execute(() => File.Delete(path));
             }
 
             await _mapRepository.DeleteMapAsync(map);
