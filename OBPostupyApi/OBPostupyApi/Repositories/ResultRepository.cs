@@ -23,6 +23,15 @@ namespace OBPostupyApi.Repositories
                 .ToListAsync();
         }
 
+        public async Task<List<Category>> GetCategoriesWithResultsAsync(string raceKey)
+        {
+            return await _context.Categories
+                .Where(c => c.Race.Key == raceKey)
+                 .Include(c => c.PersonResults)
+                    .ThenInclude(pr => pr.Person)
+                .ToListAsync();
+        }
+
         public async Task<PersonResult> GetPersonResultAsync(int id)
         {
             return await _context.PersonResults

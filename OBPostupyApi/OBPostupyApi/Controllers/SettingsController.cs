@@ -20,15 +20,15 @@ namespace OBPostupyApi.Controllers
             _settingsService = settingsService;
         }
 
-        [HttpPost("upload/manual-organizer")]
-        public async Task<IActionResult> UploadOrganizerManual([FromForm] IFormFile file)
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadFile([FromForm] IFormFile file)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _settingsService.SaveOrganizerManual(file?.OpenReadStream());
+            var result = await _settingsService.SaveFile(file?.OpenReadStream(), file?.FileName);
             return result switch
             {
                 ResponseType.OK => Ok(),
@@ -38,18 +38,36 @@ namespace OBPostupyApi.Controllers
             };
         }
 
-        [HttpPost("upload/manual-user")]
-        public async Task<IActionResult> UploadUserManual([FromForm] IFormFile file)
+        [HttpDelete("file/{id}")]
+        public async Task<IActionResult> DeleteFile(int id)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
-            var result = await _settingsService.SaveUserManual(file?.OpenReadStream());
+            var result = await _settingsService.DeleteFile(id);
             return result switch
             {
                 ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpGet("files")]
+        public async Task<IActionResult> GetFiles()
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var result = await _settingsService.GetFiles();
+            return result.ResponseType switch
+            {
+                ResponseType.OK => Ok(result),
                 ResponseType.BadRequest => BadRequest(),
                 ResponseType.Unauthorization => Unauthorized(),
                 _ => BadRequest()

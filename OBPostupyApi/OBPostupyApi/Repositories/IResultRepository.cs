@@ -9,6 +9,7 @@ namespace OBPostupyApi.Repositories
         Task<PersonResult> GetPersonResultAsync(int id);
         Task<List<Category>> GetCategoriesAsync(string raceKey);
         Task<Category> GetCategoryResultByIdAsync(int id);
+        Task<List<Category>> GetCategoriesWithResultsAsync(string raceKey);
         Task DeleteResultsAsync(string raceKey);
     }
 }

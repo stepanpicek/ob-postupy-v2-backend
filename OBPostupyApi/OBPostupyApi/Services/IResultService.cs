@@ -13,5 +13,6 @@ namespace OBPostupyApi.Services
         Task<CategoryResultsResponse> GetCategoryResultsAsync(int id);
         Task<ResponseType> DeleteResults(string raceId);
         Task<ResultsResponse> GetRaceResults(string raceId);
+        Task<SearchResultsResponse> SearchRaceResultsAsync(string raceId, string term);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using OBPostupyApi.Dto.Responses;
 using OBPostupyApi.Entities;
 using OBPostupyApi.Enums;
@@ -150,6 +149,18 @@ namespace OBPostupyApi.Services
             };
             await _pathRepository.SaveAsync();
 
+            return ResponseType.OK;
+        }
+
+        public async Task<ResponseType> DeletePathAsync(int personResultId)
+        {
+            var path = await _pathRepository.GetPathByResultIdAsync(personResultId);
+            if(path == null)
+            {
+                return ResponseType.BadRequest;
+            }
+
+            await _pathRepository.RemovePathAsync(path);
             return ResponseType.OK;
         }
     }

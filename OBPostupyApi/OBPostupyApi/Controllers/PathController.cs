@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Services;
@@ -26,6 +27,25 @@ namespace OBPostupyApi.Controllers
             }
 
             var response = await _pathService.SavePathAsync(model.PersonResultId, model.Path);
+            return response switch
+            {
+                ResponseType.OK => Ok(),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var response = await _pathService.RemovePathAsync(id);
             return response switch
             {
                 ResponseType.OK => Ok(),

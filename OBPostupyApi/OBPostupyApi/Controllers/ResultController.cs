@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
 using OBPostupyApi.Services;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 namespace OBPostupyApi.Controllers
@@ -140,6 +141,25 @@ namespace OBPostupyApi.Controllers
         public async Task<IActionResult> GetGategoryResults(int id)
         {
             var response = await _resultService.GetCategoryResultsAsync(id);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
+        
+        [AllowAnonymous]
+        [HttpGet("{raceKey}/search/{term}")]
+        public async Task<IActionResult> SearchResults(string raceKey, string term)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var response = await _resultService.SearchRaceResultsAsync(raceKey, term);
             return response.ResponseType switch
             {
                 ResponseType.OK => Ok(response),

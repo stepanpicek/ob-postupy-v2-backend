@@ -7,8 +7,9 @@ namespace OBPostupyApi.Services
 {
     public interface ISettingsService
     {
-        Task<ResponseType> SaveOrganizerManual(Stream file);
-        Task<ResponseType> SaveUserManual(Stream file); 
+        Task<ResponseType> SaveFile(Stream file, string fileName);
+        Task<ResponseType> DeleteFile(int id);
+        Task<FilesResponse> GetFiles();
         Task<ResponseType> UpdateInfo(string info);
         Task<InfoResponse> GetInfo();
     }

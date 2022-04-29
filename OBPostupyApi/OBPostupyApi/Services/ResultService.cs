@@ -176,5 +176,59 @@ namespace OBPostupyApi.Services
 
             return ResponseType.BadRequest;
         }
+
+        public async Task<SearchResultsResponse> SearchRaceResultsAsync(string raceId, string term)
+        {
+            var results = await _resultRepository.GetCategoriesWithResultsAsync(raceId);
+            if(results == null || results.Count == 0)
+            {
+                return new SearchResultsResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var categories = new List<SearchCategoryResultsResponse>();
+
+            foreach (var result in results)
+            {
+                SearchCategoryResultsResponse category = null;
+                foreach (var personResult in result.PersonResults)
+                {
+                    List<bool> expressions = new List<bool>
+                    {
+                        personResult?.Person?.RegNumbers?.Any(r => r?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0) ?? false,
+                        personResult?.Person?.FirstName?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0,
+                        personResult?.Person?.LastName?.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0,
+                    };
+
+                    if (expressions.Any(e => e))
+                    {
+                        category ??= new SearchCategoryResultsResponse();
+                        category.People ??= new List<SearchPersonResultsResponse>();
+                        category.People.Add(new SearchPersonResultsResponse
+                        {
+                            FirstName = personResult?.Person?.FirstName,
+                            LastName = personResult?.Person?.LastName,
+                            RegNumber = personResult?.Person?.RegNumbers?.FirstOrDefault(),
+                            Id = personResult.Id,
+                            Status = personResult?.Status,
+                            Position = personResult?.Position,
+                        });
+                    }
+                }
+
+                if (category != null || result.Name.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    category ??= new SearchCategoryResultsResponse();
+                    category.Id = result.Id;
+                    category.Category = result.Name;
+                    categories.Add(category);
+                }
+            }
+            
+            return new SearchResultsResponse 
+            { 
+                ResponseType = ResponseType.OK,
+                Categories = categories 
+            };
+        }
     }
 }

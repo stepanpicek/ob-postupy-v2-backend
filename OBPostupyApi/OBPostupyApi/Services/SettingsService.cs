@@ -6,6 +6,7 @@ using OBPostupyApi.Repositories;
 using Polly;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace OBPostupyApi.Services
@@ -38,32 +39,26 @@ namespace OBPostupyApi.Services
             };
         }
 
-        public async Task<ResponseType> SaveOrganizerManual(Stream file) => await SaveManual(file, ORGANIZER_MANUAL_PATH);
-
-        public async Task<ResponseType> SaveUserManual(Stream file) => await SaveManual(file, USER_MANUAL_PATH);
-
-        private async Task<ResponseType> SaveManual(Stream file, string fileName)
+        public async Task<ResponseType> SaveFile(Stream file, string fileName)
         {
             if (file == null)
             {
                 return ResponseType.BadRequest;
             }
-
-            var path = Path.Combine(_hostingEnvironment.WebRootPath, fileName);
-            if (File.Exists(path))
+            var fileNm = fileName;
+            var path = Path.Combine(_hostingEnvironment.WebRootPath, "files", fileNm);
+            while (File.Exists(path))
             {
-                Policy.Handle<Exception>()
-                   .WaitAndRetry(10, retryAttempt => TimeSpan.FromMilliseconds(500), (exception, time) =>
-                   {
-                       _logger.LogWarning(exception, "Error during deleting manual file.");
-                   })
-                   .Execute(() => File.Delete(path));
+                fileNm = $"{Path.GetRandomFileName()}{fileName}";
+                path = Path.Combine(_hostingEnvironment.WebRootPath, "files", fileNm);
             }
 
             using (var fileStream = new FileStream(path, FileMode.Create, FileAccess.Write))
             {
                 await file.CopyToAsync(fileStream);
             }
+
+            await _repository.SaveFile(fileNm);
 
             return ResponseType.OK;
         }
@@ -72,6 +67,39 @@ namespace OBPostupyApi.Services
         {
             await _repository.UpdateInfo(info);
             return ResponseType.OK;
+        }
+
+        public async Task<ResponseType> DeleteFile(int id)
+        {
+            var file = await _repository.GetFile(id);
+            
+            if(file == null || file.Value == null)
+            {
+                return ResponseType.BadRequest;
+            }
+
+            var path = Path.Combine(_hostingEnvironment.WebRootPath, "files", file.Value);
+            if (File.Exists(path))
+            {
+                Policy.Handle<Exception>()
+                   .WaitAndRetry(10, retryAttempt => TimeSpan.FromMilliseconds(500), (exception, time) =>
+                   {
+                       _logger.LogWarning(exception, "Error during deleting map file.");
+                   })
+                   .Execute(() => File.Delete(path));
+            }
+            await _repository.DeleteFile(file);
+            return ResponseType.OK;
+        }
+
+        public async Task<FilesResponse> GetFiles()
+        {
+            var files = await _repository.GetFiles();
+            return new FilesResponse
+            {
+                ResponseType = ResponseType.OK,
+                Files = files.Select(f => new FileResponse { Id = f.Id, Path = f.Value}).ToList()
+            };
         }
     }
 }
