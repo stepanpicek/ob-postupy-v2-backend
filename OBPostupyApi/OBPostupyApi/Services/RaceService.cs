@@ -250,6 +250,7 @@ namespace OBPostupyApi.Services
                 return ResponseType.Unauthorization;
             }
 
+            await _mapService.DeleteMapAsync(raceKey);
             await _raceRepository.DeleteRaceAsync(raceKey);
 
             return ResponseType.OK;

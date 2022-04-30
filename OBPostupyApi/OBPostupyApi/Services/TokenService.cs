@@ -31,7 +31,7 @@ namespace OBPostupyApi.Services
                  new Claim("firstName", user.FirstName),
                  new Claim("lastName", user.LastName),
                  new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                 new Claim("expiration", expiration.ToString()),
+                 new Claim("expiration", expiration.ToString("u")),
                  new Claim(JwtRegisteredClaimNames.Sub,user.Email),
                  new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
