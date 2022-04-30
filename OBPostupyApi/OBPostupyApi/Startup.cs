@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +16,8 @@ using OBPostupyApi.Repositories;
 using OBPostupyApi.Services;
 using OBPostupyApi.Settings;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace OBPostupyApi
@@ -153,6 +156,19 @@ namespace OBPostupyApi
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseRequestLocalization(new RequestLocalizationOptions
+            {
+                DefaultRequestCulture = new RequestCulture(new CultureInfo("en-US")),
+                SupportedCultures = new List<CultureInfo>
+                {
+                    new CultureInfo("en-US")
+                },
+                SupportedUICultures = new List<CultureInfo>
+                {
+                    new CultureInfo("en-US")
+                }
+            });
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -178,6 +194,7 @@ namespace OBPostupyApi
             {
                 endpoints.MapControllers();
             });
+
         }
     }
 }
