@@ -108,5 +108,23 @@ namespace OBPostupyApi.Controllers
                 _ => BadRequest()
             };
         }
+
+        [HttpGet("analysis/{id}")]
+        public async Task<IActionResult> GetPathAnalysis(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var response = await _pathService.GetPathAnalysisAsync(id.Value);
+            return response.ResponseType switch
+            {
+                ResponseType.OK => Ok(response),
+                ResponseType.BadRequest => BadRequest(),
+                ResponseType.Unauthorization => Unauthorized(),
+                _ => BadRequest()
+            };
+        }
     }
 }

@@ -17,15 +17,17 @@ namespace OBPostupyApi.Services
         private readonly IPathRepository _pathRepository;
         private readonly IResultRepository _resultRepository;
         private readonly ICourseRepository _courseRepository;
+        private readonly IElevationService _elevationService;
         private readonly ILogger<PathService> _logger;
 
-        public PathService(IAnalysisService analysisService, IPathRepository pathRepository, IResultRepository resultRepository, ICourseRepository courseRepository, ILogger<PathService> logger)
+        public PathService(IAnalysisService analysisService, IPathRepository pathRepository, IResultRepository resultRepository, ICourseRepository courseRepository, ILogger<PathService> logger, IElevationService elevationService)
         {
             _analysisService = analysisService;
             _pathRepository = pathRepository;
             _resultRepository = resultRepository;
             _courseRepository = courseRepository;
             _logger = logger;
+            _elevationService = elevationService;
         }
 
         public async Task<ResponseType> DrawPathAsync(int personResultId, List<SplitPath> pathData)
@@ -40,9 +42,12 @@ namespace OBPostupyApi.Services
                 .Select(p => p.Positions.Select(ps => new Location { Position = Tuple.Create(ps.Lat, ps.Lon) }).ToList())
                 .ToList();
 
+            var locations = _analysisService.GetDrawnPath(splits, personResult);
+            await _elevationService.SetElevationAsync(locations);
+
             personResult.Path = new Path
             {
-                Locations = _analysisService.GetDrawnPath(splits, personResult)
+                Locations = locations
             };
 
             await _pathRepository.SaveAsync();
@@ -143,9 +148,11 @@ namespace OBPostupyApi.Services
             }).ToList();
 
             var interpolatedData = _analysisService.InterpolationByTime(locations, 6);
+            await _elevationService.SetElevationAsync(interpolatedData);
+
             personResult.Path = new Path
             {
-                Locations = locations
+                Locations = interpolatedData
             };
             await _pathRepository.SaveAsync();
 
@@ -162,6 +169,36 @@ namespace OBPostupyApi.Services
 
             await _pathRepository.RemovePathAsync(path);
             return ResponseType.OK;
+        }
+
+        public async Task<PathAnalysisResponse> GetPathAnalysisAsync(int personResultId)
+        {
+            var personResult = await _resultRepository.GetPersonResultAsync(personResultId);
+            if (personResult == null)
+            {
+                return new PathAnalysisResponse { ResponseType = ResponseType.BadRequest };
+            }
+
+            var interpolated = await GetInterpolatedLocationsAsync(personResult);
+            if(interpolated.Any(s => s.Elevation == null))
+            {
+                await _elevationService.SetElevationAsync(interpolated);
+            }
+
+            var distance = _analysisService.GetPathDistance(interpolated);
+            var elevation = _analysisService.GetElevation(interpolated);
+            var speed = _analysisService.GetSpeed(interpolated);
+
+            return new PathAnalysisResponse
+            {
+                ResponseType = ResponseType.OK,
+                Distance = distance,
+                Ascension = elevation.Elevation,
+                Descent = elevation.Descent,
+                Time = (personResult.FinishTime - personResult.StartTime).TotalSeconds,
+                AverageSpeed = speed.Sum() / speed.Count(),
+                AverageTempo = 60 / (speed.Sum() / speed.Count())
+            };
         }
     }
 }

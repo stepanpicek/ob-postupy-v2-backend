@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using OBPostupyApi.Dto.Responses;
 using OBPostupyApi.Entities;
 using OBPostupyApi.Enums;
 using OBPostupyApi.Models;
@@ -74,7 +72,7 @@ namespace OBPostupyApi.Controllers
                 UserName = model.Email,
                 Email = model.Email, 
                 FirstName = model.FirstName, 
-                LastName = model.LastName 
+                LastName = model.LastName
             };
 
             var registerResult = await _userManager.CreateAsync(user, model.Password);

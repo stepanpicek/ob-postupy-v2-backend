@@ -14,5 +14,6 @@ namespace OBPostupyApi.Services
         Task<PathResponse> GetPathAsync(int personResultId);
         Task<PathWithSpeedResponse> GetPathWithSpeedAsync(int personResultId);
         Task<ResponseType> RemovePathAsync(int personResultId);
+        Task<PathAnalysisResponse> GetPathAnalysisAsync(int personResultId);
     }
 }

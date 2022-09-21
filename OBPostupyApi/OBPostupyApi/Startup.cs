@@ -71,7 +71,8 @@ namespace OBPostupyApi
                 .Configure<JwtSettings>(Configuration.GetSection("Jwt"))
                 .Configure<EmailSettings>(Configuration.GetSection("Email"))
                 .Configure<StravaSettings>(Configuration.GetSection("Strava"))
-                .Configure<FrontEndSettings>(Configuration.GetSection("FrontEnd"));
+                .Configure<FrontEndSettings>(Configuration.GetSection("FrontEnd"))
+                .Configure<VirtualEarthSettings>(Configuration.GetSection("VirtualEarth"));
 
             services.AddDbContext<RepositoryContext>(db =>
             {
@@ -137,6 +138,10 @@ namespace OBPostupyApi
             services.AddHttpClient<IStravaService, StravaService>((client) =>
             {
                 client.BaseAddress = new Uri(Configuration["Strava:Uri"]);
+            });
+            services.AddHttpClient<IElevationService, ElevationService>((client) =>
+            {
+                client.BaseAddress = new Uri(Configuration["VirtualEarth:Uri"]);
             });
 
             services.AddScoped<ICoursesReader, CoursesReader>();
